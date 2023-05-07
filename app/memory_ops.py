@@ -6,9 +6,7 @@ from llama_index import GPTVectorStoreIndex, StorageContext, load_index_from_sto
 from llama_index.indices.composability import ComposableGraph
 from app.env import (
     MEMORY_DIR,
-    KNOWLEDGEBASE,
     BASE_PATH,
-    MEMORY_DIR_TRAIN,
 )
 
 def append_line_to_file(line, folder_path):
@@ -30,8 +28,6 @@ def append_line_to_file(line, folder_path):
         f.write(line + '\n')
 
 def ask_with_memory(line) -> str:
-    print("OPENAI API"+BASE_PATH+"\n")
-
     # This example uses text-davinci-003 by default; feel free to change if desired
     llm_predictor = LLMPredictor(llm=OpenAI(temperature=0, model_name="gpt-3.5-turbo", openai_api_base=BASE_PATH))
 
@@ -45,26 +41,25 @@ def ask_with_memory(line) -> str:
     # Load documents from the 'data' directory
     service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor, prompt_helper=prompt_helper)
 
-    docstore = KNOWLEDGEBASE+"/docstore.json"
-
+    docstore = os.path.join(MEMORY_DIR, "knowledgebase", "docstore.json")
     if not os.path.exists(docstore):
         d = Document(line)
         documents = [d]
-        os.makedirs(KNOWLEDGEBASE, exist_ok=True)
+        os.makedirs(os.path.join(MEMORY_DIR, "knowledgebase"), exist_ok=True)
         index = GPTVectorStoreIndex.from_documents(documents, service_context=service_context)
-        index.storage_context.persist(persist_dir=KNOWLEDGEBASE)
+        index.storage_context.persist(persist_dir=os.path.join(MEMORY_DIR, "knowledgebase"))
     else:
         print("docstore already exists")
 
 
     # rebuild storage context
-    storage_context = StorageContext.from_defaults(persist_dir=KNOWLEDGEBASE)
-    storage_context2 = StorageContext.from_defaults(persist_dir=MEMORY_DIR)
+    storage_context = StorageContext.from_defaults(persist_dir=os.path.join(MEMORY_DIR, "knowledgebase"))
+    storage_context2 = StorageContext.from_defaults(persist_dir=os.path.join(MEMORY_DIR, "memory"))
     
 
     # load index
-    index = load_index_from_storage(storage_context,     service_context=service_context,    )
-    index2 = load_index_from_storage(storage_context2,     service_context=service_context,    )
+    index = load_index_from_storage(storage_context, service_context=service_context,    )
+    index2 = load_index_from_storage(storage_context2, service_context=service_context,    )
 
     graph = ComposableGraph.from_indices(GPTListIndex, [index, index2], index_summaries=["knowledgebase", "conversations"], service_context=service_context)
     query_engine = graph.as_query_engine()
@@ -73,8 +68,7 @@ def ask_with_memory(line) -> str:
 
 
 def update_memory(line):
-    print("OPENAI API"+BASE_PATH+"\n")
-    append_line_to_file(line, MEMORY_DIR_TRAIN)
+    append_line_to_file(line, os.path.join(MEMORY_DIR, "dataset"))
 
     # This example uses text-davinci-003 by default; feel free to change if desired
     llm_predictor = LLMPredictor(llm=OpenAI(temperature=0, model_name="gpt-3.5-turbo", openai_api_base=BASE_PATH))
@@ -86,23 +80,24 @@ def update_memory(line):
     d = Document(line)
     documents = [d]
 
+    persist_dir = os.path.join(MEMORY_DIR, "memory")
     prompt_helper = PromptHelper(max_input_size, num_output, max_chunk_overlap)
 
     # Load documents from the 'data' directory
     service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor, prompt_helper=prompt_helper)
-    docstore = MEMORY_DIR+"/docstore.json"
+    docstore = os.path.join(persist_dir, "/docstore.json")
 
     if not os.path.exists(docstore):
-        os.makedirs(MEMORY_DIR, exist_ok=True)
+        os.makedirs(persist_dir, exist_ok=True)
         index = GPTVectorStoreIndex.from_documents( documents, service_context=service_context)
-        index.storage_context.persist(persist_dir=MEMORY_DIR)
+        index.storage_context.persist(persist_dir=persist_dir)
         return
     else:
         print("docstore already exists")
     # rebuild storage context
-    storage_context = StorageContext.from_defaults(persist_dir=MEMORY_DIR)
+    storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
 
     # store to index
     index = load_index_from_storage(storage_context,     service_context=service_context,    )
     index.insert(d)
-    index.storage_context.persist(persist_dir=MEMORY_DIR)
+    index.storage_context.persist(persist_dir=persist_dir)
