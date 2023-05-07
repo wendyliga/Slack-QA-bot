@@ -84,15 +84,12 @@ def respond_to_app_mention(
             for reply in replies_in_thread:
                 c = reply["text"]+"\n\n"
                 content += c
+                role = "assistant" if reply["user"] == context.bot_user_id else "user"
                 messages.append(
                     {
-                        "role": (
-                            "assistant"
-                            if reply["user"] == context.bot_user_id
-                            else "user"
-                        ),
+                        "role": role,
                         "content": (
-                            f"<@{reply['user']}>: "
+                            f"{role}: "
                             + format_openai_message_content(
                                 reply["text"], TRANSLATE_MARKDOWN
                             )
@@ -107,7 +104,7 @@ def respond_to_app_mention(
             messages.append(
                 {
                     "role": "user",
-                    "content": f"<@{user_id}>: "
+                    "content": f"user: "
                     + format_openai_message_content(msg_text, TRANSLATE_MARKDOWN),
                 }
             )
@@ -299,7 +296,7 @@ def respond_to_new_message(
             update_memory(reply.get("text"))
             messages.append(
                 {
-                    "content": f"<@{msg_user_id}>: "
+                    "content": f"<user>: "
                     + format_openai_message_content(
                         reply.get("text"), TRANSLATE_MARKDOWN
                     ),
