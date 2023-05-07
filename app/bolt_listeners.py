@@ -102,8 +102,8 @@ def respond_to_app_mention(
             update_memory(content)
         else:
             # Strip bot Slack user ID from initial message
-            update_memory(payload["text"])
             msg_text = re.sub(f"<@{context.bot_user_id}>\\s*", "", payload["text"])
+            update_memory(msg_text)
             messages.append(
                 {
                     "role": "user",
