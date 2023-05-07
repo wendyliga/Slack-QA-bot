@@ -14,6 +14,10 @@ from slack_sdk.web import WebClient
 from app.markdown import slack_to_markdown, markdown_to_slack
 from app.slack_ops import update_wip_message
 
+from app.memory_ops import (
+    ask_with_memory
+)
+
 # ----------------------------
 # Internal functions
 # ----------------------------
@@ -38,13 +42,10 @@ def format_openai_message_content(content: str, translate_markdown: bool) -> str
     return content
 
 
-def start_receiving_openai_response(
+def ask_llm(
     *,
-    openai_api_key: str,
-    model: str,
     messages: List[Dict[str, str]],
-    user: str,
-) -> Generator[OpenAIObject, Any, None]:
+) -> str:
     # Remove old messages to make sure we have room for max_tokens
     # See also: https://platform.openai.com/docs/guides/chat/introduction
     # > total tokens must be below the model’s maximum limit (4096 tokens for gpt-3.5-turbo-0301)
@@ -59,22 +60,13 @@ def start_receiving_openai_response(
         if not removed:
             # Fall through and let the OpenAI error handler deal with it
             break
-
-    return openai.ChatCompletion.create(
-        api_key=openai_api_key,
-        model=model,
-        messages=messages,
-        top_p=1,
-        n=1,
-        max_tokens=MAX_TOKENS,
-        temperature=1,
-        presence_penalty=0,
-        frequency_penalty=0,
-        logit_bias={},
-        user=user,
-        stream=True,
-    )
-
+    
+    prompt=""
+    
+    for i, message in enumerate(messages):
+        prompt += message["content"] + "\n"
+    
+    return ask_with_memory(prompt)
 
 def consume_openai_stream_to_write_reply(
     *,

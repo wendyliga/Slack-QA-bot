@@ -12,14 +12,18 @@ from app.env import (
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
+
+from app.memory_ops import (
+    update_memory
+)
+
 from app.i18n import translate
 from app.openai_ops import (
-    start_receiving_openai_response,
+    ask_llm,
     format_openai_message_content,
-    consume_openai_stream_to_write_reply,
     build_system_text,
 )
-from app.slack_ops import find_parent_message, is_no_mention_thread, post_wip_message
+from app.slack_ops import find_parent_message, is_no_mention_thread, post_wip_message, update_wip_message
 
 
 #
@@ -68,7 +72,7 @@ def respond_to_app_mention(
             return
 
         user_id = context.actor_user_id or context.user_id
-
+        content = ""
         if payload.get("thread_ts") is not None:
             # Mentioning the bot user in a thread
             replies_in_thread = client.conversations_replies(
@@ -78,6 +82,8 @@ def respond_to_app_mention(
                 limit=1000,
             ).get("messages", [])
             for reply in replies_in_thread:
+                c = reply["text"]+"\n\n"
+                content += c
                 messages.append(
                     {
                         "role": (
@@ -93,8 +99,10 @@ def respond_to_app_mention(
                         ),
                     }
                 )
+            update_memory(content)
         else:
             # Strip bot Slack user ID from initial message
+            update_memory(payload["text"])
             msg_text = re.sub(f"<@{context.bot_user_id}>\\s*", "", payload["text"])
             messages.append(
                 {
@@ -115,21 +123,17 @@ def respond_to_app_mention(
             messages=messages,
             user=context.user_id,
         )
-        steam = start_receiving_openai_response(
-            openai_api_key=openai_api_key,
-            model=context["OPENAI_MODEL"],
-            messages=messages,
-            user=context.user_id,
-        )
-        consume_openai_stream_to_write_reply(
+
+        resp = ask_llm(messages=messages)
+        print("Reply "+resp)
+
+        update_wip_message(
             client=client,
-            wip_reply=wip_reply,
-            context=context,
-            user_id=user_id,
+            channel=context.channel_id,
+            ts=wip_reply["message"]["ts"],
+            text=resp,
             messages=messages,
-            steam=steam,
-            timeout_seconds=OPENAI_TIMEOUT_SECONDS,
-            translate_markdown=TRANSLATE_MARKDOWN,
+            user=user_id,
         )
 
     except Timeout:
@@ -292,6 +296,7 @@ def respond_to_new_message(
 
         for reply in filtered_messages_in_context:
             msg_user_id = reply.get("user")
+            update_memory(reply.get("text"))
             messages.append(
                 {
                     "content": f"<@{msg_user_id}>: "
@@ -313,12 +318,6 @@ def respond_to_new_message(
             messages=messages,
             user=user_id,
         )
-        steam = start_receiving_openai_response(
-            openai_api_key=openai_api_key,
-            model=context["OPENAI_MODEL"],
-            messages=messages,
-            user=user_id,
-        )
 
         latest_replies = client.conversations_replies(
             channel=context.channel_id,
@@ -334,17 +333,16 @@ def respond_to_new_message(
             )
             return
 
-        consume_openai_stream_to_write_reply(
+        resp = ask_llm(messages=messages)
+        print("Reply "+resp)
+        update_wip_message(
             client=client,
-            wip_reply=wip_reply,
-            context=context,
-            user_id=user_id,
+            channel=context.channel_id,
+            ts=wip_reply["message"]["ts"],
+            text=resp,
             messages=messages,
-            steam=steam,
-            timeout_seconds=OPENAI_TIMEOUT_SECONDS,
-            translate_markdown=TRANSLATE_MARKDOWN,
+            user=user_id,
         )
-
     except Timeout:
         if wip_reply is not None:
             text = (
