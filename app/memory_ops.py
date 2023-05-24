@@ -13,7 +13,7 @@ from langchain.document_loaders import (
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.docstore.document import Document
 from app.env import (
     EMBEDDINGS_MODEL_NAME,
@@ -54,7 +54,8 @@ def append_line_to_file(line, folder_path):
         f.write(line + '\n')
 
 def ask_with_memory(line) -> str:
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
+    #embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
+    embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
 
     db = Chroma(persist_directory=PERSIST_DIRECTORY, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
     retriever = db.as_retriever()
@@ -77,8 +78,9 @@ def ask_with_memory(line) -> str:
 
 def build_knowledgebase(sitemap):
     # Load environment variables
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
-    chunk_size = 500
+    #embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
+    embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+    chunk_size = 400 # 500
     chunk_overlap = 50
     sitemap_loader = SitemapLoader(web_path=sitemap)
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
