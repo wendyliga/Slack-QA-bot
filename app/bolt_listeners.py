@@ -62,6 +62,8 @@ def respond_to_app_mention(
     system_text = build_system_text(SYSTEM_TEXT, TRANSLATE_MARKDOWN, context)
     messages = [{"role": "system", "content": system_text}]
 
+    print("system text:"+system_text, flush=True)
+
     openai_api_key = context.get("OPENAI_API_KEY")
     try:
         if openai_api_key is None:
@@ -89,8 +91,7 @@ def respond_to_app_mention(
                     {
                         "role": role,
                         "content": (
-                            f"{role}: "
-                            + format_openai_message_content(
+                            format_openai_message_content(
                                 reply["text"], TRANSLATE_MARKDOWN
                             )
                         ),
@@ -104,8 +105,7 @@ def respond_to_app_mention(
             messages.append(
                 {
                     "role": "user",
-                    "content": f"user: "
-                    + format_openai_message_content(msg_text, TRANSLATE_MARKDOWN),
+                    "content": format_openai_message_content(msg_text, TRANSLATE_MARKDOWN),
                 }
             )
 
@@ -296,8 +296,7 @@ def respond_to_new_message(
             update_memory(reply.get("text"))
             messages.append(
                 {
-                    "content": f"<user>: "
-                    + format_openai_message_content(
+                    "content": format_openai_message_content(
                         reply.get("text"), TRANSLATE_MARKDOWN
                     ),
                     "role": "user",
