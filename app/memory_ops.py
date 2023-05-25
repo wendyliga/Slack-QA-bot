@@ -80,50 +80,26 @@ def ask_with_memory(line) -> str:
     return res
 
 def build_knowledgebase(sitemap):
-    # Load environment variables
+    # Load environment variables
+    repositories = os.getenv("REPOSITORIES").split(",")
+
     embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
-    #embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
-    chunk_size = 500 # 500
+    chunk_size = 500
     chunk_overlap = 50
 
-    git_loader = GitLoader(
-        clone_url="https://github.com/kairos-io/kairos",
-        repo_path="/tmp/kairos-io",
-        branch="master",
-    )
-    git_loader2 = GitLoader(
-        clone_url="https://github.com/kairos-io/kairos-agent",
-        repo_path="/tmp/kairos-agent",
-        branch="main",
-    )
-    git_loader3 = GitLoader(
-        clone_url="https://github.com/kairos-io/kairos-sdk",
-        repo_path="/tmp/kairos-sdk",
-        branch="main",
-    )
-    git_loader4 = GitLoader(
-        clone_url="https://github.com/kairos-io/osbuilder",
-        repo_path="/tmp/osbuilder",
-        branch="master",
-    )
-    git_loader5 = GitLoader(
-        clone_url="https://github.com/kairos-io/packages",
-        repo_path="/tmp/packages",
-        branch="main",
-    )
-    git_loader6 = GitLoader(
-        clone_url="https://github.com/kairos-io/immucore",
-        repo_path="/tmp/immucore",
-        branch="master",
-    )
+    git_loaders = []
+    for repo in repositories:
+        git_loader = GitLoader(
+            clone_url=os.getenv(f"{repo}_CLONE_URL"),
+            repo_path=f"/tmp/{repo}",
+            branch=os.getenv(f"{repo}_BRANCH", "main")
+        )
+        git_loaders.append(git_loader)
+
     sitemap_loader = SitemapLoader(web_path=sitemap)
     documents = []
-    documents.extend(git_loader.load())
-    documents.extend(git_loader2.load())
-    documents.extend(git_loader3.load())
-    documents.extend(git_loader4.load())
-    documents.extend(git_loader5.load())
-    documents.extend(git_loader6.load())
+    for git_loader in git_loaders:
+        documents.extend(git_loader.load())
     documents.extend(sitemap_loader.load())
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     texts = text_splitter.split_documents(documents)

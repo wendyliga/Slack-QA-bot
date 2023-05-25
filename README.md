@@ -46,9 +46,21 @@ export OPENAI_API_KEY=sk-...
 export OPENAI_MODEL=gpt-4
 # Optional: You can adjust the timeout seconds for OpenAI calls (default: 30)
 export OPENAI_TIMEOUT_SECONDS=60
-# Optional: You can include priming instructions for ChatGPT to fine tune the bot purpose
-export OPENAI_SYSTEM_TEXT="You proofread text. When you receive a message, you will check
-for mistakes and make suggestion to improve the language of the given text"
+
+
+export MEMORY_DIR=/tmp/memory_dir
+
+export OPENAI_API_BASE=http://localhost:8080/v1
+
+export EMBEDDINGS_MODEL_NAME=all-MiniLM-L6-v2
+
+## Repository and sitemap to index in the vector database on start
+export SITEMAP="https://kairos.io/sitemap.xml"
+export REPOSITORIES="foo,bar"
+export foo_CLONE_URL="http://github.com.."
+export bar_CLONE_URL="..."
+export foo_BRANCH="master"
+
 # Optional: When the string is "true", this app translates ChatGPT prompts into a user's preferred language (default: true)
 export USE_SLACK_LANGUAGE=true
 # Optional: Adjust the app's logging level (default: DEBUG)
