@@ -10,14 +10,16 @@ from tqdm import tqdm
 from langchain.document_loaders import (
     SitemapLoader,
 )
-
+from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings,HuggingFaceEmbeddings
 from langchain.docstore.document import Document
 from app.env import (
     EMBEDDINGS_MODEL_NAME,
     MEMORY_DIR,
+    BASE_PATH,
+    OPENAI_MODEL,
 )
 
 from langchain.chains import RetrievalQA
@@ -54,8 +56,9 @@ def append_line_to_file(line, folder_path):
         f.write(line + '\n')
 
 def ask_with_memory(line) -> str:
-    #embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
-    embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
+    
+    #embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
 
     db = Chroma(persist_directory=PERSIST_DIRECTORY, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
     retriever = db.as_retriever()
@@ -66,7 +69,7 @@ def ask_with_memory(line) -> str:
 
     # Get the answer from the chain
     res = qa(line)
-    answer, docs = res['result']
+    answer, docs = res['result'], res['source_documents']
     res = answer
 
     # Print the relevant sources used for the answer
@@ -78,9 +81,9 @@ def ask_with_memory(line) -> str:
 
 def build_knowledgebase(sitemap):
     # Load environment variables
-    #embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
-    embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
-    chunk_size = 400 # 500
+    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
+    #embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+    chunk_size = 500 # 500
     chunk_overlap = 50
     sitemap_loader = SitemapLoader(web_path=sitemap)
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)

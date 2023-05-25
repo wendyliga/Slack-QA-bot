@@ -2,12 +2,13 @@ FROM python:3.11.3-slim-buster
 WORKDIR /app/
 COPY requirements.txt /app/
 
-RUN apt-get update && apt-get install build-essential -y
+RUN apt-get update && apt-get install build-essential git -y
 RUN pip install -U pip && pip install -r requirements.txt
 COPY *.py /app/
+COPY *.sh /app/
 RUN mkdir /app/app/
 COPY app/*.py /app/app/
-ENTRYPOINT python main.py
+ENTRYPOINT entrypoint.sh
 
 # docker build . -t your-repo/chat-gpt-in-slack
 # export SLACK_APP_TOKEN=xapp-...
