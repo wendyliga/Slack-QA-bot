@@ -71,11 +71,11 @@ def ask_with_memory(line) -> str:
     # Get the answer from the chain
     res = qa("---------------------\n Given the context above, answer to the following question: " + line)
     answer, docs = res['result'], res['source_documents']
-    res = answer + "\n" + "Sources\n"
+    res = answer + "\n\n\n" + "Sources:\n"
     # Print the relevant sources used for the answer
     for document in docs:
-        res = res + "\n" + document.metadata["source"] + " : "
-        res = res + document.page_content
+        res = res + "\n---------------------\n" + document.metadata["source"] + "\n---------------------\n"
+        res = res + "```\n"+document.page_content+"\n```"
     
     return res
 
