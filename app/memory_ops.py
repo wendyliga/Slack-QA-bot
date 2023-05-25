@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from langchain.document_loaders import (
     SitemapLoader,
+    GitLoader,
 )
 from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -84,9 +85,48 @@ def build_knowledgebase(sitemap):
     #embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
     chunk_size = 500 # 500
     chunk_overlap = 50
+
+    git_loader = GitLoader(
+        clone_url="https://github.com/kairos-io/kairos",
+        repo_path="/tmp/kairos-io",
+        branch="master",
+    )
+    git_loader2 = GitLoader(
+        clone_url="https://github.com/kairos-io/kairos-agent",
+        repo_path="/tmp/kairos-agent",
+        branch="main",
+    )
+    git_loader3 = GitLoader(
+        clone_url="https://github.com/kairos-io/kairos-sdk",
+        repo_path="/tmp/kairos-sdk",
+        branch="main",
+    )
+    git_loader4 = GitLoader(
+        clone_url="https://github.com/kairos-io/osbuilder",
+        repo_path="/tmp/osbuilder",
+        branch="master",
+    )
+    git_loader5 = GitLoader(
+        clone_url="https://github.com/kairos-io/packages",
+        repo_path="/tmp/packages",
+        branch="main",
+    )
+    git_loader6 = GitLoader(
+        clone_url="https://github.com/kairos-io/immucore",
+        repo_path="/tmp/immucore",
+        branch="master",
+    )
     sitemap_loader = SitemapLoader(web_path=sitemap)
+    documents = []
+    documents.extend(git_loader.load())
+    documents.extend(git_loader2.load())
+    documents.extend(git_loader3.load())
+    documents.extend(git_loader4.load())
+    documents.extend(git_loader5.load())
+    documents.extend(git_loader6.load())
+    documents.extend(sitemap_loader.load())
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    texts = text_splitter.split_documents(sitemap_loader.load())
+    texts = text_splitter.split_documents(documents)
     print(f"Creating embeddings. May take some minutes...")
     db = Chroma.from_documents(texts, embeddings, persist_directory=PERSIST_DIRECTORY, client_settings=CHROMA_SETTINGS)
     db.persist()

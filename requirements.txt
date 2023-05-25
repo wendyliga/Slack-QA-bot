@@ -5,3 +5,4 @@ openai>=0.27.4,<0.28
 tiktoken>=0.3.3,<0.4
 chromadb==0.3.23
 langchain==0.0.177
+GitPython==3.1.31
