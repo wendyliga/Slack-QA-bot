@@ -8,7 +8,7 @@ COPY *.py /app/
 COPY *.sh /app/
 RUN mkdir /app/app/
 COPY app/*.py /app/app/
-ENTRYPOINT entrypoint.sh
+ENTRYPOINT /app/entrypoint.sh
 
 # docker build . -t your-repo/chat-gpt-in-slack
 # export SLACK_APP_TOKEN=xapp-...

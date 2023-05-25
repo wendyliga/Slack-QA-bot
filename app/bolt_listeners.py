@@ -83,20 +83,21 @@ def respond_to_app_mention(
                 include_all_metadata=True,
                 limit=1000,
             ).get("messages", [])
-            for reply in replies_in_thread:
-                c = reply["text"]+"\n\n"
-                content += c
-                role = "assistant" if reply["user"] == context.bot_user_id else "user"
-                messages.append(
-                    {
-                        "role": role,
-                        "content": (
-                            format_openai_message_content(
-                                reply["text"], TRANSLATE_MARKDOWN
-                            )
-                        ),
-                    }
-                )
+            reply = replies_in_thread[-1]
+            #for reply in replies_in_thread:
+            c = reply["text"]+"\n\n"
+            content += c
+            role = "assistant" if reply["user"] == context.bot_user_id else "user"
+            messages.append(
+                {
+                    "role": role,
+                    "content": (
+                        format_openai_message_content(
+                            reply["text"], TRANSLATE_MARKDOWN
+                        )
+                    ),
+                }
+            )
             update_memory(content)
         else:
             # Strip bot Slack user ID from initial message
@@ -380,7 +381,7 @@ def respond_to_new_message(
 
 def register_listeners(app: App):
     app.event("app_mention")(ack=just_ack, lazy=[respond_to_app_mention])
-    app.event("message")(ack=just_ack, lazy=[respond_to_new_message])
+    # app.event("message")(ack=just_ack, lazy=[respond_to_new_message])
 
 
 MESSAGE_SUBTYPES_TO_SKIP = ["message_changed", "message_deleted"]

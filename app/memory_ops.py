@@ -68,10 +68,9 @@ def ask_with_memory(line) -> str:
     qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True)
 
     # Get the answer from the chain
-    res = qa(line)
+    res = qa("---------------------\n Given the context above, answer to the following question: " + line)
     answer, docs = res['result'], res['source_documents']
-    res = answer
-    res = "**Sources**\n"
+    res = answer + "\n" + "Sources\n"
     # Print the relevant sources used for the answer
     for document in docs:
         res = res + "\n" + document.metadata["source"] + " : "
