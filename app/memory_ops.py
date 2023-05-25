@@ -71,10 +71,10 @@ def ask_with_memory(line) -> str:
     res = qa(line)
     answer, docs = res['result'], res['source_documents']
     res = answer
-
+    res = "**Sources**\n"
     # Print the relevant sources used for the answer
     for document in docs:
-        res = res + "\n> " + document.metadata["source"] + ":"
+        res = res + "\n" + document.metadata["source"] + " : "
         res = res + document.page_content
     
     return res
