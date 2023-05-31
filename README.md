@@ -60,6 +60,8 @@ export REPOSITORIES="foo,bar"
 export foo_CLONE_URL="http://github.com.."
 export bar_CLONE_URL="..."
 export foo_BRANCH="master"
+export GITHUB_PERSONAL_ACCESS_TOKEN=""
+export ISSUE_REPOSITORIES="go-skynet/LocalAI,foo/bar,..."
 
 # Optional: When the string is "true", this app translates ChatGPT prompts into a user's preferred language (default: true)
 export USE_SLACK_LANGUAGE=true

@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from langchain.document_loaders import (
     SitemapLoader,
+    GitHubIssuesLoader,
     GitLoader,
 )
 from datetime import datetime
@@ -82,6 +83,7 @@ def ask_with_memory(line) -> str:
 def build_knowledgebase(sitemap):
     # Load environment variables
     repositories = os.getenv("REPOSITORIES").split(",")
+    issue_repos = os.getenv("ISSUE_REPOSITORIES").split(",")
 
     embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
     chunk_size = 500
@@ -95,6 +97,11 @@ def build_knowledgebase(sitemap):
             branch=os.getenv(f"{repo}_BRANCH", "main")
         )
         git_loaders.append(git_loader)
+    for repo in issue_repos:
+        loader = GitHubIssuesLoader(
+            repo=repo,
+        )
+        git_loaders.append(loader)
 
     sitemap_loader = SitemapLoader(web_path=sitemap)
     documents = []
