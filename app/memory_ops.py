@@ -81,6 +81,19 @@ def ask_with_memory(line) -> str:
     
     return res
 
+def fix_metadata(original_metadata):
+    new_metadata = {}
+    for k, v in original_metadata.items():
+        if type(v) in [str, int, float]:
+           # str, int, float are the types chroma can handle
+            new_metadata[k] = v
+        elif isinstance(v, list):
+            new_metadata[k] = ','.join(v)
+        else:
+            # e.g. None, bool
+            new_metadata[k] = str(v)
+    return new_metadata
+
 def build_knowledgebase(sitemap):
     # Load environment variables
     repositories = os.getenv("REPOSITORIES").split(",")
@@ -111,8 +124,13 @@ def build_knowledgebase(sitemap):
     for git_loader in git_loaders:
         documents.extend(git_loader.load())
     documents.extend(sitemap_loader.load())
+
+    for doc in documents:
+        doc.metadata = fix_metadata(doc.metadata)
+
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     texts = text_splitter.split_documents(documents)
+
     print(f"Creating embeddings. May take some minutes...")
     db = Chroma.from_documents(texts, embeddings, persist_directory=PERSIST_DIRECTORY, client_settings=CHROMA_SETTINGS)
     db.persist()
