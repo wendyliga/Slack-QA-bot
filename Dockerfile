@@ -1,16 +1,14 @@
-FROM python:3.11.3-slim-buster as builder
-COPY requirements.txt /build/
-WORKDIR /build/
-RUN pip install -U pip && pip install -r requirements.txt
-
-FROM python:3.11.3-slim-buster as app
+FROM python:3.11.3-slim-buster
 WORKDIR /app/
+COPY requirements.txt /app/
+
+RUN apt-get update && apt-get install build-essential git -y
+RUN pip install -U pip && pip install -r requirements.txt
 COPY *.py /app/
+COPY *.sh /app/
 RUN mkdir /app/app/
 COPY app/*.py /app/app/
-COPY --from=builder /usr/local/bin/ /usr/local/bin/
-COPY --from=builder /usr/local/lib/ /usr/local/lib/
-ENTRYPOINT python main.py
+ENTRYPOINT /app/entrypoint.sh
 
 # docker build . -t your-repo/chat-gpt-in-slack
 # export SLACK_APP_TOKEN=xapp-...
