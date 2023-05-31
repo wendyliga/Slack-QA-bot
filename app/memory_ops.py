@@ -15,7 +15,7 @@ from langchain.document_loaders import (
 from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
-from langchain.embeddings import OpenAIEmbeddings,HuggingFaceEmbeddings
+from langchain.embeddings import OpenAIEmbeddings,HuggingFaceEmbeddings,HuggingFaceInstructEmbeddings
 from langchain.docstore.document import Document
 from app.env import (
     EMBEDDINGS_MODEL_NAME,
@@ -58,8 +58,9 @@ def append_line_to_file(line, folder_path):
         f.write(line + '\n')
 
 def ask_with_memory(line) -> str:
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
-    
+    #embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
+    embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl",
+                                                model_kwargs={"device": "cpu"})
     #embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
 
     db = Chroma(persist_directory=PERSIST_DIRECTORY, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
@@ -85,7 +86,9 @@ def build_knowledgebase(sitemap):
     repositories = os.getenv("REPOSITORIES").split(",")
     issue_repos = os.getenv("ISSUE_REPOSITORIES").split(",")
 
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
+    embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl",
+                                                model_kwargs={"device": "cpu"})
+    #embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
     chunk_size = 500
     chunk_overlap = 50
 
