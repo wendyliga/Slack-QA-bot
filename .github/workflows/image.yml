@@ -5,7 +5,7 @@ on:
   pull_request:
   push:
     branches:
-      - qa
+      - main
 
 jobs:
   docker:
@@ -17,7 +17,7 @@ jobs:
       - name: Prepare
         id: prep
         run: |
-          DOCKER_IMAGE=quay.io/go-skynet/chatgpt-bot
+          DOCKER_IMAGE=quay.io/spectrocloud-labs/slack-qa-local-bot
           VERSION=qa
           SHORTREF=${GITHUB_SHA::8}
 

@@ -76,9 +76,11 @@ def ask_with_memory(line) -> str:
     res = answer + "\n\n\n" + "Sources:\n"
     # Print the relevant sources used for the answer
     for document in docs:
-        res = res + "\n---------------------\n" + document.metadata["source"] + "\n---------------------\n"
-        res = res + "```\n"+document.page_content+"\n```"
-    
+        if "source" in document.metadata:
+            res += "\n---------------------\n" + document.metadata["source"] + "\n---------------------\n"
+        else:
+            res += "\n---------------------\n No source available (sorry!) \n---------------------\n"
+        res += "```\n"+document.page_content+"\n```"
     return res
 
 def fix_metadata(original_metadata):
