@@ -85,9 +85,9 @@ def ask_with_memory(line) -> str:
     # Print the relevant sources used for the answer
     for source in sources:
         if source.startswith("http"):
-            res += "\n---------------------\n" + source + "\n---------------------\n"
+            res += "- " + source + "\n"
         else:
-            res += "\n---------------------\n source code: " + source + "\n---------------------\n"
+            res += "- source code: " + source + "\n"
     
     return res
 
