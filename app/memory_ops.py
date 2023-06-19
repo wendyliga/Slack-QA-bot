@@ -106,8 +106,8 @@ def fix_metadata(original_metadata):
 
 def build_knowledgebase(sitemap):
     # Load environment variables
-    repositories = os.getenv("REPOSITORIES").split(",")
-    issue_repos = os.getenv("ISSUE_REPOSITORIES").split(",")
+    repositories = os.getenv("REPOSITORIES", "").split(",") if os.getenv("REPOSITORIES") else []
+    issue_repos = os.getenv("ISSUE_REPOSITORIES", "").split(",") if os.getenv("ISSUE_REPOSITORIES") else []
 
     #embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl",
     #                                            model_kwargs={"device": "cpu"})
