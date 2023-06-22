@@ -1,29 +1,18 @@
-# ChatGPT in Slack
+# Slack QA (Question answering) bot
 
-Introducing a transformative app for Slack users, specifically designed to enhance your communication with [ChatGPT](https://openai.com/blog/chatgpt)!
-This app enables seamless interaction with ChatGPT via Slack channels, optimizing your planning and writing processes by leveraging AI technology.
+This is a fork of https://github.com/seratch/ChatGPT-in-Slack with additional langchain and integration with https://github.com/go-skynet/LocalAI to run completely locally, without need of any OpenAI account.
 
-Discover the app's functionality by installing the live demo from https://bit.ly/chat-gpt-in-slack. 
-Keep in mind that the live demo is personally hosted by [@seratch](https://github.com/seratch).
-For corporate Slack workspaces, we strongly advise deploying the app on your own infrastructure using the guidelines provided below.
+The bot allows to ask queries and uses langchain to build a vector database from a website documentation, or a list of Github projects.
 
-If you're looking for a sample app operating on [Slack's next-generation hosted platform](https://api.slack.com/future), check out https://github.com/seratch/chatgpt-on-deno 🙌
+![Kairos-TPM-Slackbot](https://github.com/spectrocloud-labs/Slack-QA-bot/assets/2420543/6047e1ff-22d5-4b03-9d73-fcb7fb19a2c1)
 
 ## How It Works
 
-You can interact with ChatGPT like you do in the website. In the same thread, the bot remember what you already said.
+You have to start a new thread by mentioning the bot: @<bot name> What's ...?
 
-<img src="https://user-images.githubusercontent.com/19658/222405498-867f5002-c8ba-4dc9-bd86-fddc5192070c.gif" width=450 />
+![Kairos-TPM-Slackbot](https://github.com/spectrocloud-labs/Slack-QA-bot/assets/2420543/6047e1ff-22d5-4b03-9d73-fcb7fb19a2c1)
 
-Consider this realistic scenario: ask the bot to generate a business email for communication with your manager.
-
-<img width="700" src="https://user-images.githubusercontent.com/19658/222609940-eb581361-eeea-441a-a300-96ecdbc23d0b.png">
-
-With ChatGPT, you don't need to ask a perfectly formulated question at first. Adjusting the details after receiving the bot's initial response is a great approach.
-
-<img width="700" src="https://user-images.githubusercontent.com/19658/222609947-b99ace0d-4c90-4265-940d-3fc373429b80.png">
-
-Doesn't that sound cool? 😎
+Note: It _does not_ reply to mentions. That was done in purpose to avoid to send big context back to the LLM, which makes it slow when running entirely on CPU.
 
 ## Running the App on Your Local Machine
 
