@@ -12,10 +12,10 @@ on:
 
 jobs:
   docker:
-    name: Build
+    name: docker
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: release
         uses: actions/checkout@v2
       - name: Login to Github Packages
         if: github.event_name != 'pull_request'
