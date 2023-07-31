@@ -24,7 +24,7 @@ from app.openai_ops import (
     build_system_text,
 )
 from app.slack_ops import find_parent_message, is_no_mention_thread, post_wip_message, update_wip_message
-
+from app.utils import redact_string
 
 #
 # Listener functions
@@ -295,11 +295,11 @@ def respond_to_new_message(
         for reply in filtered_messages_in_context:
             msg_user_id = reply.get("user")
             update_memory(reply.get("text"))
+            reply_text = redact_string(reply.get("text"))
             messages.append(
                 {
-                    "content": format_openai_message_content(
-                        reply.get("text"), TRANSLATE_MARKDOWN
-                    ),
+                    "content": f"<@{msg_user_id}>: "
+                    + format_openai_message_content(reply_text, TRANSLATE_MARKDOWN),
                     "role": "user",
                 }
             )
@@ -381,7 +381,7 @@ def respond_to_new_message(
 
 def register_listeners(app: App):
     app.event("app_mention")(ack=just_ack, lazy=[respond_to_app_mention])
-    # app.event("message")(ack=just_ack, lazy=[respond_to_new_message])
+    app.event("message")(ack=just_ack, lazy=[respond_to_new_message])
 
 
 MESSAGE_SUBTYPES_TO_SKIP = ["message_changed", "message_deleted"]

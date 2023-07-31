@@ -70,21 +70,25 @@ def ask_with_memory(line) -> str:
     # Get the answer from the chain
     res = qa("---------------------\n Given the context above, answer to the following question: " + line)
     answer, docs = res['result'], res['source_documents']
-    res = answer + "\n\n\n" + "Sources:\n"
+    res = answer
     
-    sources = set()  # To store unique sources
+    # sources = set()  # To store unique sources
     
-    # Collect unique sources
-    for document in docs:
-        if "source" in document.metadata:
-            sources.add(document.metadata["source"])
+    ## imporve this sources part by checking if the source value exist or not
+    # if len(sources) > 0:
+    #     res += "\n\n\n" + "Sources:\n"
+
+    # # Collect unique sources
+    # for document in docs:
+    #     if "source" in document.metadata:
+    #         sources.add(document.metadata["source"])
     
-    # Print the relevant sources used for the answer
-    for source in sources:
-        if source.startswith("http"):
-            res += "- " + source + "\n"
-        else:
-            res += "- source code: " + source + "\n"
+    # # Print the relevant sources used for the answer
+    # for source in sources:
+    #     if source.startswith("http"):
+    #         res += "- " + source + "\n"
+    #     else:
+    #         res += "- source code: " + source + "\n"
     
     return res
 
