@@ -3,7 +3,7 @@ from typing import Optional
 import openai
 from slack_bolt import BoltContext
 
-from .openai_ops import GPT_3_5_TURBO_0301_MODEL
+from app.env import OPENAI_MODEL
 
 # All the supported languages for Slack app as of March 2023
 _locale_to_lang = {
@@ -42,7 +42,7 @@ def translate(*, openai_api_key: str, context: BoltContext, text: str) -> str:
         return cached_result
     response = openai.ChatCompletion.create(
         api_key=openai_api_key,
-        model=GPT_3_5_TURBO_0301_MODEL,
+        model=OPENAI_MODEL,
         messages=[
             {
                 "role": "system",

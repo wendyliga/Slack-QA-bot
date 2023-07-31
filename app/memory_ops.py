@@ -11,6 +11,7 @@ from langchain.document_loaders import (
     SitemapLoader,
     GitHubIssuesLoader,
     GitLoader,
+    DirectoryLoader
 )
 from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -58,11 +59,7 @@ def append_line_to_file(line, folder_path):
         f.write(line + '\n')
 
 def ask_with_memory(line) -> str:
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
-    #embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl",
-    #                                            model_kwargs={"device": "cpu"})
-    #embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
-
+    embeddings = OpenAIEmbeddings(model=EMBEDDINGS_MODEL_NAME, openai_api_base=BASE_PATH)
     db = Chroma(persist_directory=PERSIST_DIRECTORY, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
     retriever = db.as_retriever()
 
@@ -104,36 +101,15 @@ def fix_metadata(original_metadata):
             new_metadata[k] = str(v)
     return new_metadata
 
-def build_knowledgebase(sitemap):
-    # Load environment variables
-    repositories = os.getenv("REPOSITORIES", "").split(",") if os.getenv("REPOSITORIES") else []
-    issue_repos = os.getenv("ISSUE_REPOSITORIES", "").split(",") if os.getenv("ISSUE_REPOSITORIES") else []
-
-    #embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl",
-    #                                            model_kwargs={"device": "cpu"})
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
+def build_knowledgebase():
+    embeddings = OpenAIEmbeddings(model=EMBEDDINGS_MODEL_NAME, openai_api_base=BASE_PATH)
     chunk_size = 500
     chunk_overlap = 50
 
-    git_loaders = []
-    for repo in repositories:
-        git_loader = GitLoader(
-            clone_url=os.getenv(f"{repo}_CLONE_URL"),
-            repo_path=f"/tmp/{repo}",
-            branch=os.getenv(f"{repo}_BRANCH", "main")
-        )
-        git_loaders.append(git_loader)
-    for repo in issue_repos:
-        loader = GitHubIssuesLoader(
-            repo=repo,
-        )
-        git_loaders.append(loader)
-
-    sitemap_loader = SitemapLoader(web_path=sitemap)
     documents = []
-    for git_loader in git_loaders:
-        documents.extend(git_loader.load())
-    documents.extend(sitemap_loader.load())
+    # add loader to documents to append data noy only for all data inside data folder
+    data_loader = DirectoryLoader("data/")
+    documents.extend(data_loader.load())
 
     for doc in documents:
         doc.metadata = fix_metadata(doc.metadata)

@@ -18,12 +18,13 @@ from app.memory_ops import (
     ask_with_memory
 )
 
+from app.env import OPENAI_MODEL
+
 # ----------------------------
 # Internal functions
 # ----------------------------
 
 MAX_TOKENS = 1024
-GPT_3_5_TURBO_0301_MODEL = "gpt-3.5-turbo-0301"
 
 
 # Format message from Slack to send to OpenAI
@@ -154,14 +155,14 @@ def consume_openai_stream_to_write_reply(
 def calculate_num_tokens(
     messages: List[Dict[str, str]],
     # TODO: adjustment for gpt-4
-    model: str = GPT_3_5_TURBO_0301_MODEL,
+    model: str = OPENAI_MODEL,
 ) -> int:
     """Returns the number of tokens used by a list of messages."""
     try:
         encoding = tiktoken.encoding_for_model(model)
     except KeyError:
         encoding = tiktoken.get_encoding("cl100k_base")
-    if model == GPT_3_5_TURBO_0301_MODEL:
+    if model == OPENAI_MODEL:
         # note: future models may deviate from this
         num_tokens = 0
         for message in messages:

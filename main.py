@@ -10,7 +10,6 @@ from app.env import (
     USE_SLACK_LANGUAGE,
     SLACK_APP_LOG_LEVEL,
     OPENAI_MODEL,
-    SITEMAP,
 )
 from app.slack_ops import (
     build_home_tab,
@@ -73,6 +72,6 @@ if __name__ == "__main__":
         context["OPENAI_MODEL"] = OPENAI_MODEL
         next_()
 
-    build_knowledgebase(SITEMAP)
+    build_knowledgebase()
     handler = SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"])
     handler.start()
