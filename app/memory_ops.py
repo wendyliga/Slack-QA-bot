@@ -91,7 +91,7 @@ def ask_with_memory(line) -> str:
 
     # sources = set()  # To store unique sources
 
-    ## imporve this sources part by checking if the source value exist or not
+    # imporve this sources part by checking if the source value exist or not
     # if len(sources) > 0:
     #     res += "\n\n\n" + "Sources:\n"
 
@@ -144,7 +144,7 @@ def build_knowledgebase():
     )
     texts = text_splitter.split_documents(documents)
 
-    print(f"Creating embeddings. May take some minutes...")
+    print("Creating embeddings. May take some minutes...")
     db = Chroma.from_documents(
         texts,
         embeddings,
