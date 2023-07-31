@@ -17,9 +17,7 @@ from app.slack_ops import (
     DEFAULT_HOME_TAB_CONFIGURE_LABEL,
 )
 from app.i18n import translate
-from app.memory_ops import (
-    build_knowledgebase
-)
+from app.memory_ops import build_knowledgebase
 
 if __name__ == "__main__":
     from slack_bolt.adapter.socket_mode import SocketModeHandler

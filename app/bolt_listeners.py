@@ -13,9 +13,7 @@ from app.env import (
     TRANSLATE_MARKDOWN,
 )
 
-from app.memory_ops import (
-    update_memory
-)
+from app.memory_ops import update_memory
 
 from app.i18n import translate
 from app.openai_ops import (
@@ -23,7 +21,12 @@ from app.openai_ops import (
     format_openai_message_content,
     build_system_text,
 )
-from app.slack_ops import find_parent_message, is_no_mention_thread, post_wip_message, update_wip_message
+from app.slack_ops import (
+    find_parent_message,
+    is_no_mention_thread,
+    post_wip_message,
+    update_wip_message,
+)
 from app.utils import redact_string
 
 #
@@ -62,7 +65,7 @@ def respond_to_app_mention(
     system_text = build_system_text(SYSTEM_TEXT, TRANSLATE_MARKDOWN, context)
     messages = [{"role": "system", "content": system_text}]
 
-    print("system text:"+system_text, flush=True)
+    print("system text:" + system_text, flush=True)
 
     openai_api_key = context.get("OPENAI_API_KEY")
     try:
@@ -84,17 +87,15 @@ def respond_to_app_mention(
                 limit=1000,
             ).get("messages", [])
             reply = replies_in_thread[-1]
-            #for reply in replies_in_thread:
-            c = reply["text"]+"\n\n"
+            # for reply in replies_in_thread:
+            c = reply["text"] + "\n\n"
             content += c
             role = "assistant" if reply["user"] == context.bot_user_id else "user"
             messages.append(
                 {
                     "role": role,
                     "content": (
-                        format_openai_message_content(
-                            reply["text"], TRANSLATE_MARKDOWN
-                        )
+                        format_openai_message_content(reply["text"], TRANSLATE_MARKDOWN)
                     ),
                 }
             )
@@ -106,7 +107,9 @@ def respond_to_app_mention(
             messages.append(
                 {
                     "role": "user",
-                    "content": format_openai_message_content(msg_text, TRANSLATE_MARKDOWN),
+                    "content": format_openai_message_content(
+                        msg_text, TRANSLATE_MARKDOWN
+                    ),
                 }
             )
 
@@ -123,7 +126,7 @@ def respond_to_app_mention(
         )
 
         resp = ask_llm(messages=messages)
-        print("Reply "+resp)
+        print("Reply " + resp)
 
         update_wip_message(
             client=client,
@@ -331,7 +334,7 @@ def respond_to_new_message(
             return
 
         resp = ask_llm(messages=messages)
-        print("Reply "+resp)
+        print("Reply " + resp)
         update_wip_message(
             client=client,
             channel=context.channel_id,

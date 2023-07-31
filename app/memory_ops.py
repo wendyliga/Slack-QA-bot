@@ -11,12 +11,16 @@ from langchain.document_loaders import (
     SitemapLoader,
     GitHubIssuesLoader,
     GitLoader,
-    DirectoryLoader
+    DirectoryLoader,
 )
 from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
-from langchain.embeddings import OpenAIEmbeddings,HuggingFaceEmbeddings,HuggingFaceInstructEmbeddings
+from langchain.embeddings import (
+    OpenAIEmbeddings,
+    HuggingFaceEmbeddings,
+    HuggingFaceInstructEmbeddings,
+)
 from langchain.docstore.document import Document
 from app.env import (
     EMBEDDINGS_MODEL_NAME,
@@ -35,10 +39,11 @@ PERSIST_DIRECTORY = os.path.join(MEMORY_DIR, "chromadb")
 
 # Define the Chroma settings
 CHROMA_SETTINGS = Settings(
-        chroma_db_impl='duckdb+parquet',
-        persist_directory=PERSIST_DIRECTORY,
-        anonymized_telemetry=False
+    chroma_db_impl="duckdb+parquet",
+    persist_directory=PERSIST_DIRECTORY,
+    anonymized_telemetry=False,
 )
+
 
 def append_line_to_file(line, folder_path):
     if not os.path.exists(folder_path):
@@ -46,34 +51,46 @@ def append_line_to_file(line, folder_path):
     else:
         print("dir already exists")
     # Get current date in YYYY-MM-DD format
-    date_str = datetime.now().strftime('%Y-%m-%d')
-    
+    date_str = datetime.now().strftime("%Y-%m-%d")
+
     # Create file if it doesn't exist
-    file_path = os.path.join(folder_path, f'{date_str}.txt')
+    file_path = os.path.join(folder_path, f"{date_str}.txt")
     if not os.path.exists(file_path):
-        with open(file_path, 'w'):
+        with open(file_path, "w"):
             pass
-    
+
     # Append line to file
-    with open(file_path, 'a') as f:
-        f.write(line + '\n')
+    with open(file_path, "a") as f:
+        f.write(line + "\n")
+
 
 def ask_with_memory(line) -> str:
-    embeddings = OpenAIEmbeddings(model=EMBEDDINGS_MODEL_NAME, openai_api_base=BASE_PATH)
-    db = Chroma(persist_directory=PERSIST_DIRECTORY, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
+    embeddings = OpenAIEmbeddings(
+        model=EMBEDDINGS_MODEL_NAME, openai_api_base=BASE_PATH
+    )
+    db = Chroma(
+        persist_directory=PERSIST_DIRECTORY,
+        embedding_function=embeddings,
+        client_settings=CHROMA_SETTINGS,
+    )
     retriever = db.as_retriever()
 
     res = ""
     llm = ChatOpenAI(temperature=0, openai_api_base=BASE_PATH, model_name=OPENAI_MODEL)
-    qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True)
+    qa = RetrievalQA.from_chain_type(
+        llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True
+    )
 
     # Get the answer from the chain
-    res = qa("---------------------\n Given the context above, answer to the following question: " + line)
-    answer, docs = res['result'], res['source_documents']
+    res = qa(
+        "---------------------\n Given the context above, answer to the following question: "
+        + line
+    )
+    answer, docs = res["result"], res["source_documents"]
     res = answer
-    
+
     # sources = set()  # To store unique sources
-    
+
     ## imporve this sources part by checking if the source value exist or not
     # if len(sources) > 0:
     #     res += "\n\n\n" + "Sources:\n"
@@ -82,31 +99,35 @@ def ask_with_memory(line) -> str:
     # for document in docs:
     #     if "source" in document.metadata:
     #         sources.add(document.metadata["source"])
-    
+
     # # Print the relevant sources used for the answer
     # for source in sources:
     #     if source.startswith("http"):
     #         res += "- " + source + "\n"
     #     else:
     #         res += "- source code: " + source + "\n"
-    
+
     return res
+
 
 def fix_metadata(original_metadata):
     new_metadata = {}
     for k, v in original_metadata.items():
         if type(v) in [str, int, float]:
-           # str, int, float are the types chroma can handle
+            # str, int, float are the types chroma can handle
             new_metadata[k] = v
         elif isinstance(v, list):
-            new_metadata[k] = ','.join(v)
+            new_metadata[k] = ",".join(v)
         else:
             # e.g. None, bool
             new_metadata[k] = str(v)
     return new_metadata
 
+
 def build_knowledgebase():
-    embeddings = OpenAIEmbeddings(model=EMBEDDINGS_MODEL_NAME, openai_api_base=BASE_PATH)
+    embeddings = OpenAIEmbeddings(
+        model=EMBEDDINGS_MODEL_NAME, openai_api_base=BASE_PATH
+    )
     chunk_size = 500
     chunk_overlap = 50
 
@@ -118,13 +139,21 @@ def build_knowledgebase():
     for doc in documents:
         doc.metadata = fix_metadata(doc.metadata)
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size, chunk_overlap=chunk_overlap
+    )
     texts = text_splitter.split_documents(documents)
 
     print(f"Creating embeddings. May take some minutes...")
-    db = Chroma.from_documents(texts, embeddings, persist_directory=PERSIST_DIRECTORY, client_settings=CHROMA_SETTINGS)
+    db = Chroma.from_documents(
+        texts,
+        embeddings,
+        persist_directory=PERSIST_DIRECTORY,
+        client_settings=CHROMA_SETTINGS,
+    )
     db.persist()
     db = None
+
 
 def update_memory(line):
     append_line_to_file(line, os.path.join(MEMORY_DIR, "dataset"))

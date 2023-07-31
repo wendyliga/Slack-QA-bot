@@ -7,6 +7,7 @@ RUN pip install -U pip && pip install -r requirements.txt
 COPY *.py /app/
 COPY *.sh /app/
 RUN mkdir /app/app/
+RUN mkdir /app/data
 COPY app/*.py /app/app/
 ENTRYPOINT /app/entrypoint.sh
 

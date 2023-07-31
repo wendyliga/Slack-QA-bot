@@ -14,9 +14,7 @@ from slack_sdk.web import WebClient
 from app.markdown import slack_to_markdown, markdown_to_slack
 from app.slack_ops import update_wip_message
 
-from app.memory_ops import (
-    ask_with_memory
-)
+from app.memory_ops import ask_with_memory
 
 from app.env import OPENAI_MODEL
 
@@ -61,13 +59,14 @@ def ask_llm(
         if not removed:
             # Fall through and let the OpenAI error handler deal with it
             break
-    
-    prompt=""
-    
+
+    prompt = ""
+
     for i, message in enumerate(messages):
         prompt += message["content"] + "\n"
-    
+
     return ask_with_memory(prompt)
+
 
 def consume_openai_stream_to_write_reply(
     *,
