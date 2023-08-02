@@ -1,5 +1,6 @@
 import logging
 import os
+import dotenv
 
 from slack_bolt import App, BoltContext
 from slack_sdk.web import WebClient
@@ -20,6 +21,8 @@ from app.i18n import translate
 from app.memory_ops import build_knowledgebase
 
 if __name__ == "__main__":
+    # load env
+    dotenv.load_dotenv(".env")
     from slack_bolt.adapter.socket_mode import SocketModeHandler
 
     logging.basicConfig(level=SLACK_APP_LOG_LEVEL)

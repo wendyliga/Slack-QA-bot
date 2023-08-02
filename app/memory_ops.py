@@ -12,6 +12,7 @@ from langchain.document_loaders import (
     GitHubIssuesLoader,
     GitLoader,
     DirectoryLoader,
+    UnstructuredHTMLLoader,
 )
 from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -133,8 +134,26 @@ def build_knowledgebase():
 
     documents = []
     # add loader to documents to append data noy only for all data inside data folder
-    data_loader = DirectoryLoader("data/")
-    documents.extend(data_loader.load())
+    for file in os.listdir("data"):
+        # patch html to remove pre tag to avoid chroma error when loading html
+        # chroma will handle that as an xml file
+        # and will end up with an error
+        with open(os.path.join("data", file), "r") as fr:
+            content = "\n".join(fr.readlines())
+
+            if not content:
+                print("skipping file: ", file)
+                continue
+
+            if "<pre" in content:
+                print("patching file: ", file)
+                new_content = content.replace("<pre", "<div").replace("</pre", "</div")
+                with open(os.path.join("data", file), "w") as fw:
+                    fw.write(new_content)
+
+        print("processing file: ", file)
+        loader = UnstructuredHTMLLoader(f"data/{file}")
+        documents.extend(loader.load())
 
     for doc in documents:
         doc.metadata = fix_metadata(doc.metadata)
