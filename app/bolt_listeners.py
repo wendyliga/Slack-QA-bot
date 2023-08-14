@@ -229,19 +229,17 @@ def respond_to_new_message(
                 is_no_mention_required = True
             else:
                 the_parent_message_found = False
-                for message in messages_in_context:
-                    if message.get("ts") == thread_ts:
-                        the_parent_message_found = True
-                        is_no_mention_required = is_no_mention_thread(context, message)
-                        break
+                # check if mention only on last message in thread
+                message = messages_in_context[-1]
+                if message.get("ts") == thread_ts:
+                    the_parent_message_found = True
+                    is_no_mention_required = is_no_mention_thread(context, message)
                 if the_parent_message_found is False:
                     parent_message = find_parent_message(
                         client, context.channel_id, thread_ts
                     )
                     if parent_message is not None:
-                        is_no_mention_required = is_no_mention_thread(
-                            context, parent_message
-                        )
+                        is_no_mention_required = is_no_mention_thread(context, message)
 
         messages = []
         user_id = context.actor_user_id or context.user_id
