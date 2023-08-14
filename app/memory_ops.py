@@ -3,7 +3,6 @@
 import os
 import glob
 from typing import List
-from dotenv import load_dotenv
 from multiprocessing import Pool
 from tqdm import tqdm
 
@@ -31,16 +30,19 @@ from app.env import (
 )
 
 from langchain.chains import RetrievalQA
-from langchain.chat_models import ChatOpenAI
+from langchain.chat_models import (
+    ChatOpenAI,
+    AzureChatOpenAI,
+)
 from chromadb.config import Settings
-
+from langchain.vectorstores.base import VectorStoreRetriever
 
 # Define the folder for storing database
 PERSIST_DIRECTORY = os.path.join(MEMORY_DIR, "chromadb")
 
 # Define the Chroma settings
 CHROMA_SETTINGS = Settings(
-    chroma_db_impl="duckdb+parquet",
+    chroma_db_impl='duckdb+parquet',
     persist_directory=PERSIST_DIRECTORY,
     anonymized_telemetry=False,
 )
@@ -77,7 +79,7 @@ def ask_with_memory(line) -> str:
     retriever = db.as_retriever()
 
     res = ""
-    llm = ChatOpenAI(temperature=0, openai_api_base=BASE_PATH, model_name=OPENAI_MODEL)
+    llm = AzureChatOpenAI(temperature=0, openai_api_base=BASE_PATH, model_name=OPENAI_MODEL, deployment_name=OPENAI_MODEL)
     qa = RetrievalQA.from_chain_type(
         llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True
     )
@@ -90,26 +92,25 @@ def ask_with_memory(line) -> str:
     answer, docs = res["result"], res["source_documents"]
     res = answer
 
-    # sources = set()  # To store unique sources
+    sources = set()  # To store unique sources
+
+    # Collect unique sources
+    for document in docs:
+        if "source" in document.metadata:
+            sources.add(document.metadata["source"])
 
     # imporve this sources part by checking if the source value exist or not
-    # if len(sources) > 0:
-    #     res += "\n\n\n" + "Sources:\n"
+    if len(sources) > 0:
+        res += "\n\n\n" + "Sources:\n"
 
-    # # Collect unique sources
-    # for document in docs:
-    #     if "source" in document.metadata:
-    #         sources.add(document.metadata["source"])
-
-    # # Print the relevant sources used for the answer
-    # for source in sources:
-    #     if source.startswith("http"):
-    #         res += "- " + source + "\n"
-    #     else:
-    #         res += "- source code: " + source + "\n"
+        # Print the relevant sources used for the answer
+        for source in sources:
+            if source.startswith("http"):
+                res += "- " + source + "\n"
+            else:
+                res += "- source code: " + source + "\n"
 
     return res
-
 
 def fix_metadata(original_metadata):
     new_metadata = {}
@@ -138,8 +139,13 @@ def build_knowledgebase():
         # patch html to remove pre tag to avoid chroma error when loading html
         # chroma will handle that as an xml file
         # and will end up with an error
-        with open(os.path.join("data", file), "r") as fr:
-            content = "\n".join(fr.readlines())
+        with open(os.path.join("data", file), "r") as f:
+            # skip macos .DS_store file
+            if file.startswith(".DS_Store"):
+                continue
+
+            print("checking file: ", file)
+            content = "\n".join(f.readlines())
 
             if not content:
                 print("skipping file: ", file)
