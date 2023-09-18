@@ -5,6 +5,7 @@ import glob
 from typing import List
 from multiprocessing import Pool
 from tqdm import tqdm
+import time
 
 from langchain.document_loaders import (
     SitemapLoader,
@@ -12,6 +13,7 @@ from langchain.document_loaders import (
     GitLoader,
     DirectoryLoader,
     UnstructuredHTMLLoader,
+    ConfluenceLoader,
 )
 from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -24,9 +26,21 @@ from langchain.embeddings import (
 from langchain.docstore.document import Document
 from app.env import (
     EMBEDDINGS_MODEL_NAME,
+    EMBEDDINGS_SLEEP_TIME,
+    EMBEDDINGS_REQUEST_CONCURRENT_JOB,
     MEMORY_DIR,
     BASE_PATH,
     OPENAI_MODEL,
+    OPENAI_TEMPERATURE,
+    GITHUB_PERSONAL_ACCESS_TOKEN,
+    GIT_REPOSITORIES,
+    GIT_ISSUE_REPOSITORIES,
+    CONFLUENCE_BASE_URL,
+    CONFLUENCE_SPACE_KEY,
+    CONFLUENCE_EMAIL,
+    JIRA_API_KEY,
+    CONFLUENCE_LIMIT_PER_REQUEST,
+    CONFLUENCE_TOTAL_LIMIT_PAGES,
 )
 
 from langchain.chains import RetrievalQA
@@ -79,7 +93,13 @@ def ask_with_memory(line) -> str:
     retriever = db.as_retriever()
 
     res = ""
-    llm = AzureChatOpenAI(temperature=0, openai_api_base=BASE_PATH, model_name=OPENAI_MODEL, deployment_name=OPENAI_MODEL)
+    llm = AzureChatOpenAI(
+        temperature=OPENAI_TEMPERATURE, 
+        openai_api_base=BASE_PATH, 
+        model_name=OPENAI_MODEL, 
+        deployment_name=OPENAI_MODEL
+    )
+    
     qa = RetrievalQA.from_chain_type(
         llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True
     )
@@ -92,23 +112,23 @@ def ask_with_memory(line) -> str:
     answer, docs = res["result"], res["source_documents"]
     res = answer
 
-    sources = set()  # To store unique sources
+    # sources = set()  # To store unique sources
 
-    # Collect unique sources
-    for document in docs:
-        if "source" in document.metadata:
-            sources.add(document.metadata["source"])
+    # # Collect unique sources
+    # for document in docs:
+    #     if "source" in document.metadata:
+    #         sources.add(document.metadata["source"])
 
-    # imporve this sources part by checking if the source value exist or not
-    if len(sources) > 0:
-        res += "\n\n\n" + "Sources:\n"
+    # # imporve this sources part by checking if the source value exist or not
+    # if len(sources) > 0:
+    #     res += "\n\n\n" + "Sources:\n"
 
-        # Print the relevant sources used for the answer
-        for source in sources:
-            if source.startswith("http"):
-                res += "- " + source + "\n"
-            else:
-                res += "- source code: " + source + "\n"
+    #     # Print the relevant sources used for the answer
+    #     for source in sources:
+    #         if source.startswith("http"):
+    #             res += "- " + source + "\n"
+    #         else:
+    #             res += "- source code: " + source + "\n"
 
     return res
 
@@ -127,61 +147,88 @@ def fix_metadata(original_metadata):
 
 
 def build_knowledgebase():
+    chunk_size = 2000
+    chunk_overlap = 5
+
     embeddings = OpenAIEmbeddings(
-        model=EMBEDDINGS_MODEL_NAME, openai_api_base=BASE_PATH
+        model=EMBEDDINGS_MODEL_NAME, 
+        openai_api_base=BASE_PATH, 
+        chunk_size = EMBEDDINGS_REQUEST_CONCURRENT_JOB,
+        max_retries=6,
+        show_progress_bar=True,
     )
-    chunk_size = 500
-    chunk_overlap = 50
 
     documents = []
-    # add loader to documents to append data noy only for all data inside data folder
-    for file in os.listdir("data"):
-        # patch html to remove pre tag to avoid chroma error when loading html
-        # chroma will handle that as an xml file
-        # and will end up with an error
-        with open(os.path.join("data", file), "r") as f:
-            # skip macos .DS_store file
-            if file.startswith(".DS_Store"):
-                continue
 
-            print("checking file: ", file)
-            content = "\n".join(f.readlines())
+    # git source code
+    git_repos = GIT_REPOSITORIES.split(",")
 
-            if not content:
-                print("skipping file: ", file)
-                continue
+    for repo in git_repos:
+        print("Checking git repo: ", repo)
 
-            if "<pre" in content:
-                print("patching file: ", file)
-                new_content = content.replace("<pre", "<div").replace("</pre", "</div")
-                with open(os.path.join("data", file), "w") as fw:
-                    fw.write(new_content)
-
-        print("processing file: ", file)
-        loader = UnstructuredHTMLLoader(f"data/{file}")
+        loader = GitLoader(
+            clone_url=f"https://github.com/{repo}",
+            repo_path="./data/repo/" + repo.split("/")[-1],
+            branch="main",
+        )
         documents.extend(loader.load())
 
+    # github issues loader
+    issue_repos = GIT_ISSUE_REPOSITORIES.split(",")
+    
+    for repo in issue_repos:
+        print("Checking repo's issues: ", repo)
+        loader = GitHubIssuesLoader(
+            repo=repo, 
+            access_token=GITHUB_PERSONAL_ACCESS_TOKEN,
+            status="all",
+            sort="created",
+            include_prs=True,
+        )
+        documents.extend(loader.load())
+
+    # confluence loader
+    if JIRA_API_KEY != "" and CONFLUENCE_BASE_URL != "" and CONFLUENCE_SPACE_KEY != "" and CONFLUENCE_EMAIL != "":
+        loader = ConfluenceLoader(url=CONFLUENCE_BASE_URL, username=CONFLUENCE_EMAIL, api_key=JIRA_API_KEY)
+        loaders = loader.load(
+            space_key=CONFLUENCE_SPACE_KEY, 
+            include_attachments=False, 
+            limit=CONFLUENCE_LIMIT_PER_REQUEST, 
+            max_pages=CONFLUENCE_TOTAL_LIMIT_PAGES
+        )
+        documents += loaders
+
+    # fix metadata
     for doc in documents:
         doc.metadata = fix_metadata(doc.metadata)
 
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size, chunk_overlap=chunk_overlap
-    )
+    # process data
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     texts = text_splitter.split_documents(documents)
 
     print("Creating embeddings. May take some minutes...")
-    db = Chroma.from_documents(
-        texts,
-        embeddings,
-        persist_directory=PERSIST_DIRECTORY,
-        client_settings=CHROMA_SETTINGS,
-    )
-    db.persist()
-    db = None
 
+    batch = EMBEDDINGS_REQUEST_CONCURRENT_JOB
+    total_docs = len(texts)
+    vectordb = Chroma(
+        persist_directory=PERSIST_DIRECTORY,
+        embedding_function=embeddings,
+        client_settings=CHROMA_SETTINGS
+    )
+
+    for i in range(0, total_docs, batch):
+        print(f"added {i+batch} documents")
+        sample_docs = texts[i:i+batch]
+        vectordb.add_documents(sample_docs)
+
+        print(f"sleeping for {EMBEDDINGS_SLEEP_TIME} seconds")
+        time.sleep(EMBEDDINGS_SLEEP_TIME)
+
+    vectordb.persist()
 
 def update_memory(line):
-    append_line_to_file(line, os.path.join(MEMORY_DIR, "dataset"))
+    # append_line_to_file(line, os.path.join(MEMORY_DIR, "dataset"))
+    print(line)
 
     # # This example uses text-davinci-003 by default; feel free to change if desired
     # llm_predictor = LLMPredictor(llm=OpenAI(temperature=0, model_name="gpt-3.5-turbo", openai_api_base=BASE_PATH))

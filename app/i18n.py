@@ -3,7 +3,10 @@ from typing import Optional
 import openai
 from slack_bolt import BoltContext
 
-from app.env import OPENAI_MODEL
+from app.env import (
+    OPENAI_MODEL,
+    OPENAI_TEMPERATURE
+)
 
 # All the supported languages for Slack app as of March 2023
 _locale_to_lang = {
@@ -64,7 +67,7 @@ def translate(*, openai_api_key: str, context: BoltContext, text: str) -> str:
         top_p=1,
         n=1,
         max_tokens=1024,
-        temperature=1,
+        temperature=OPENAI_TEMPERATURE,
         presence_penalty=0,
         frequency_penalty=0,
         logit_bias={},
